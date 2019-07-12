@@ -1,30 +1,24 @@
 package lucene.index;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Date;
+
 
 /** Index all text files under a directory.
  * <p>
@@ -36,14 +30,46 @@ public class indexer {
     private indexer() {}
 
     public static void main(String[] args) {
-//        File[] allFiles = new File("/Users/nanda/IdeaProjects/lucene/IndexDirectoryFiles").listFiles();
-//        for (int i=0;allFiles != null && i< allFiles.length ;i++){
-//            indexFile(allFiles[i].toString(),i==0);
-//        }
-
-        indexFile("IndexDirectoryFiles",false);
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader("./db.txt"));
+            String line = reader.readLine();
+            Date start = new Date();
+            Directory indexDir = FSDirectory.open(Paths.get("index"));
+            IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
+            IndexWriter writer = new IndexWriter(indexDir, iwc);
+            boolean flag = true;
+            while (line != null){
+                if (!line.equals("")){
+                    if (flag){
+                        iwc.setOpenMode(OpenMode.CREATE);
+                        flag = false;
+                    }else{
+                        iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
+                    }
+                    JSONObject data = (JSONObject) (new JSONParser().parse(line));
+                    Document doc = new Document();
+                    doc.add(new StringField("username", (String) data.get("username"), Store.YES));
+                    doc.add(new StringField("email", (String) data.get("email"), Store.YES));
+                    doc.add(new StringField("status", (String) data.get("status"), Store.YES));
+                    doc.add(new StringField("details", line, Store.YES));
+                    if (writer.getConfig().getOpenMode() == OpenMode.CREATE) {
+                        writer.addDocument(doc);
+                    }else{
+                        writer.updateDocument(new Term("details", line), doc);
+                    }
+                }
+                line = reader.readLine();
+            }
+            writer.close();
+            Date end = new Date();
+            System.out.println(end.getTime() - start.getTime() + " total milliseconds");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        //indexFile("IndexDirectoryFiles",false);
     }
-    /** Index all text files under a directory. */
+    /* Index all text files under a directory. */
     private static void indexFile(String docsPath, boolean create) {
         String indexPath = "index";
         if (docsPath == null) {
@@ -143,6 +169,9 @@ public class indexer {
             // field that is indexed (i.e. searchable), but don't tokenize
             // the field into separate words and don't index term frequency
             // or positional information:
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file.toFile())));
+            String line = reader.readLine();
+
             Field pathField = new StringField("path", file.toString(), Field.Store.YES);
             Field datetime = new StringField("date", "2222", Field.Store.YES);
             doc.add(pathField);
