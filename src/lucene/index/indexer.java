@@ -32,32 +32,30 @@ public class indexer {
     public static void main(String[] args) {
         BufferedReader reader;
         try {
-            reader = new BufferedReader(new FileReader("./db.txt"));
+            reader = new BufferedReader(new FileReader("db.txt"));
             String line = reader.readLine();
             Date start = new Date();
             Directory indexDir = FSDirectory.open(Paths.get("index"));
             IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
+            iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
             IndexWriter writer = new IndexWriter(indexDir, iwc);
             boolean flag = true;
             while (line != null){
                 if (!line.equals("")){
-                    if (flag){
-                        iwc.setOpenMode(OpenMode.CREATE);
-                        flag = false;
-                    }else{
-                        iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
-                    }
                     JSONObject data = (JSONObject) (new JSONParser().parse(line));
                     Document doc = new Document();
-                    doc.add(new StringField("username", (String) data.get("username"), Store.YES));
-                    doc.add(new StringField("email", (String) data.get("email"), Store.YES));
-                    doc.add(new StringField("status", (String) data.get("status"), Store.YES));
+                    doc.add(new StringField("username", (String) data.get("username"), Store.NO));
+                    doc.add(new StringField("email", (String) data.get("email"), Store.NO));
+                    doc.add(new StringField("status", (String) data.get("status"), Store.NO));
                     doc.add(new StringField("details", line, Store.YES));
-                    if (writer.getConfig().getOpenMode() == OpenMode.CREATE) {
+                    if (flag || writer.getConfig().getOpenMode() == OpenMode.CREATE) {
+                        flag = false;
                         writer.addDocument(doc);
-                    }else{
+                    }
+                    else{
                         writer.updateDocument(new Term("details", line), doc);
                     }
+
                 }
                 line = reader.readLine();
             }
