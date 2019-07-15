@@ -36,12 +36,12 @@ public class searcher {
             System.exit(0);
         }
 
-        String index = "index";
-        String field = "username";
+        String index = "DataIndex";
+        String field = "id";
         String queries = null;
         int repeat = 0;
         boolean raw = false;
-        String queryString = "oneone";
+        String queryString = "1";
         int hitsPerPage = 10;
 
         for(int i = 0;i < args.length;i++) {
@@ -163,7 +163,7 @@ public class searcher {
                     }
 
                     Document doc = searcher.doc(hits[i].doc);
-                    String details = doc.get("details");
+                    String details = doc.get("data");
                     if (details != null) {
                         System.out.println(new JSONParser().parse(details));
                     } else {

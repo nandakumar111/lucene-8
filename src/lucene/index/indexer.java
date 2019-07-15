@@ -10,6 +10,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -30,12 +32,65 @@ public class indexer {
     private indexer() {}
 
     public static void main(String[] args) {
+        JSONObject obj = new JSONObject();
+        obj.put("key","id");
+        obj.put("key_value","1");
+        obj.put("store",Store.NO);
+        JSONObject obj1 = new JSONObject();
+        obj1.put("key","name");
+        obj1.put("key_value","nandakumar");
+        obj1.put("store",Store.NO);
+        JSONObject obj2 = new JSONObject();
+        obj2.put("name","nandakumar");
+        obj2.put("id","1");
+        JSONArray arr = new JSONArray();
+        arr.add(obj);
+        arr.add(obj1);
+
+        createIndexData("DataIndex", obj2.toJSONString(), arr);
+//        indexValue();
+        //indexFile("IndexDirectoryFiles",false);
+    }
+    private static void createIndexData(String path,String content, JSONArray indexValues){
+        try {
+            Date start = new Date();
+            Directory indexDir;
+            if (System.getProperty("os.name").toLowerCase().contains("windows")){
+                indexDir = FSDirectory.open(Paths.get(path));
+            }else{
+                indexDir = NIOFSDirectory.open(Paths.get(path));
+            }
+            IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
+            iwc.setOpenMode(OpenMode.CREATE);
+            IndexWriter writer = new IndexWriter(indexDir, iwc);
+            Document doc = new Document();
+            for (Object indexValue : indexValues){
+                JSONObject data = (JSONObject) indexValue;
+                doc.add(new StringField((String) (data.get("key")), (String) data.get("key_value"),(Store) data.get("store")));
+//                writer.updateDocument(new Term((String) data.get("key"), content), doc);
+            }
+            doc.add(new StringField("data", content, Store.YES));
+            writer.addDocument(doc);
+            writer.close();
+            Date end = new Date();
+            System.out.println(end.getTime() - start.getTime() + " total milliseconds");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void indexValue(){
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader("db.txt"));
             String line = reader.readLine();
             Date start = new Date();
-            Directory indexDir = FSDirectory.open(Paths.get("index"));
+            Directory indexDir;
+            if (System.getProperty("os.name").toLowerCase().contains("windows")){
+                indexDir = FSDirectory.open(Paths.get("index"));
+            }else{
+                indexDir = NIOFSDirectory.open(Paths.get("index"));
+            }
             IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
             iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
             IndexWriter writer = new IndexWriter(indexDir, iwc);
@@ -65,7 +120,6 @@ public class indexer {
         }catch (Exception e){
             e.printStackTrace();
         }
-        //indexFile("IndexDirectoryFiles",false);
     }
     /* Index all text files under a directory. */
     private static void indexFile(String docsPath, boolean create) {
