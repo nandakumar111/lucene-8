@@ -1,0 +1,14 @@
+date,services,type,message
+23-03-1999,network,warning,notfound
+22-11-2000,service,success,exception
+31-12-2000,url,error,connectionerr
+18-08-2001,service,warning,notfound
+15-09-2001,network,error,mismatch
+16-09-2001,url,error,mismatch
+20-09-2001,url,success,exception
+25-09-2001,network,success,mismatch
+27-10-2001,service,warning,connectionerr
+30-10-2001,network,success,mismatch
+31-10-2001,url,success,exception
+25-12-2001,service,warning,connectionerr
+31-12-2001,network,error,notfound
